@@ -7,7 +7,7 @@ import (
 type Key struct {
 	Id     uuid.UUID `json:"id"`
 	Secret Secret    `json:"secret"`
-	Owner  User      `json:"user"`
+	Owner  User      `json:"owner"`
 	Key    string    `json:"key"`
 }
 

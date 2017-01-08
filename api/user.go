@@ -26,7 +26,7 @@ func allUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := model.AllUsers()
 
 	if err != nil {
-		InternalServerError(w, r)
+		InternalServerError(w, r, "")
 		return
 	}
 
@@ -40,7 +40,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&u)
 
 	if err != nil {
-		BadRequest(w, r)
+		BadRequest(w, r, "")
 		return
 	}
 
@@ -49,7 +49,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	err = u.Create()
 
 	if err != nil {
-		BadRequest(w, r)
+		BadRequest(w, r, "")
 		return
 	}
 
@@ -61,10 +61,10 @@ func userCtx(next http.Handler) http.Handler {
 		username := chi.URLParam(r, "username")
 		u, empty, err := model.UserByUsername(username)
 		if err != nil {
-			InternalServerError(w, r)
+			InternalServerError(w, r, "")
 			return
 		} else if empty {
-			NotFound(w, r)
+			NotFound(w, r, "No user found for given username.")
 			return
 		}
 		ctx := context.WithValue(r.Context(), "user", u)

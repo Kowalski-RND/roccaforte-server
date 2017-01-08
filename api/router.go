@@ -22,6 +22,7 @@ func NewRouter() *chi.Mux {
 	})
 
 	r.Mount("/users", userRouter())
+	r.Mount("/secrets", secretRouter())
 
 	return r
 }

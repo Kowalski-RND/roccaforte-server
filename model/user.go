@@ -10,18 +10,23 @@ import (
 )
 
 type User struct {
-	Id        uuid.UUID `json:"-"`
+	ID        uuid.UUID `json:"-"`
 	Fullname  string    `json:"fullname" validate:"required,gt=8"`
 	Username  string    `json:"username"validate:"required,gt=3"`
 	Password  string    `json:"password,omitempty" validate:"required,gt=3"`
 	PublicKey string    `json:"public_key" validate:"required,gt=3"`
 }
 
-type Users []User
+type users []User
 
-func AllUsers() (*Users, error) {
+type Credentials struct {
+	Username string `json:"username`
+	Password string `json:"password"`
+}
+
+func AllUsers() (*users, error) {
 	var (
-		users Users
+		users users
 		u     User
 	)
 
@@ -34,7 +39,7 @@ func AllUsers() (*Users, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err := rows.Scan(&u.Id, &u.Username, &u.Fullname, &u.PublicKey)
+		err := rows.Scan(&u.ID, &u.Username, &u.Fullname, &u.PublicKey)
 		if err != nil {
 			break
 		}
@@ -51,7 +56,7 @@ func AllUsers() (*Users, error) {
 }
 
 func (u User) Create() error {
-	u.Id = uuid.NewV4()
+	u.ID = uuid.NewV4()
 
 	hash, _ := sec.HashPwd(u.Password)
 
@@ -64,7 +69,7 @@ func (u User) Create() error {
 	}
 
 	_, err = db.Query(`INSERT INTO users (id, username, fullname, "publicKey", password) VALUES ($1, $2, $3, $4, $5)`,
-		&u.Id, &u.Username, &u.Fullname, &u.PublicKey, &u.Password)
+		&u.ID, &u.Username, &u.Fullname, &u.PublicKey, &u.Password)
 
 	return err
 }
@@ -73,7 +78,7 @@ func UserByUsername(un string) (*User, bool, error) {
 	var u User
 
 	err := db.QueryRow(`SELECT id, username, password, fullname, "publicKey" FROM users WHERE username = $1`, un).
-		Scan(&u.Id, &u.Username, &u.Password, &u.Fullname, &u.PublicKey)
+		Scan(&u.ID, &u.Username, &u.Password, &u.Fullname, &u.PublicKey)
 
 	if err != nil && err == sql.ErrNoRows {
 		return nil, true, nil
@@ -86,11 +91,11 @@ func UserByUsername(un string) (*User, bool, error) {
 
 // Sets password to empty string to omit on serialization.
 func (u User) MarshalJSON() ([]byte, error) {
-	type Alias User
+	type alias User
 	u.Password = ""
 	return json.Marshal(&struct {
-		Alias
+		alias
 	}{
-		Alias: (Alias)(u),
+		alias: (alias)(u),
 	})
 }

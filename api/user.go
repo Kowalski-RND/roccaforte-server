@@ -9,6 +9,12 @@ import (
 	"net/http"
 )
 
+type contextKey int
+
+const (
+	keyUser contextKey = iota
+)
+
 func userRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", allUsers)
@@ -70,7 +76,7 @@ func userCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", u)
+		ctx := context.WithValue(r.Context(), keyUser, u)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -78,6 +84,6 @@ func userCtx(next http.Handler) http.Handler {
 func getUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	u := r.Context().Value("user").(*model.User)
+	u := r.Context().Value(keyUser).(*model.User)
 	render.JSON(w, r, u)
 }

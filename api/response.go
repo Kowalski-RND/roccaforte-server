@@ -5,18 +5,30 @@ import (
 	"net/http"
 )
 
+// InternalServerError returns a JSON message with a 500 status code.
+// If msg is empty string then the message sent is the status text
+// from the net/http library corresponding to the status code.
 func InternalServerError(w http.ResponseWriter, r *http.Request, msg string) {
 	response(w, r, msg, http.StatusInternalServerError)
 }
 
+// BadRequest returns a JSON message with a 400 status code.
+// If msg is empty string then the message sent is the status text
+// from the net/http library corresponding to the status code.
 func BadRequest(w http.ResponseWriter, r *http.Request, msg string) {
 	response(w, r, msg, http.StatusBadRequest)
 }
 
+// NotFound returns a JSON message with a 404 status code.
+// If msg is empty string then the message sent is the status text
+// from the net/http library corresponding to the status code.
 func NotFound(w http.ResponseWriter, r *http.Request, msg string) {
 	response(w, r, msg, http.StatusNotFound)
 }
 
+// Unauthorized returns a JSON message with a 401 status code.
+// If msg is empty string then the message sent is the status text
+// from the net/http library corresponding to the status code.
 func Unauthorized(w http.ResponseWriter, r *http.Request, msg string) {
 	response(w, r, msg, http.StatusUnauthorized)
 }

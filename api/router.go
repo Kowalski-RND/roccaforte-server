@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-func NewRouter() *chi.Mux {
+// New returns the main Roccaforte Server router.
+func New() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)

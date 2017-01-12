@@ -9,7 +9,7 @@ import (
 
 func main() {
 	model.InitDB("user=postgres dbname=roccaforte sslmode=disable")
-	r := api.NewRouter()
+	r := api.New()
 	log.Println("Roccaforte API up on port 8080. Quit with ^C!")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

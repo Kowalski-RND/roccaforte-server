@@ -45,10 +45,16 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	a := sec.CheckPw(u.Password, c.Password)
 
-	if a {
-		render.JSON(w, r, "Hi mom")
-	} else {
+	if !a {
 		Unauthorized(w, r, invalidUserOrPass)
 		return
 	}
+
+	if t, err := sec.IssueJWT(u.Username); err != nil {
+		InternalServerError(w, r, "")
+		return
+	} else {
+		render.JSON(w, r, t)
+	}
+
 }

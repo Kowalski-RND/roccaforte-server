@@ -18,9 +18,10 @@ func NewRouter() *chi.Mux {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hi"))
+		w.Write([]byte("Roccaforte Server"))
 	})
 
+	r.Mount("/login", loginRouter())
 	r.Mount("/users", userRouter())
 	r.Mount("/secrets", secretRouter())
 

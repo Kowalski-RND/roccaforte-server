@@ -2,18 +2,31 @@ package sec
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jinzhu/now"
+	"github.com/satori/go.uuid"
 	"time"
 )
 
 const (
+	alg    = "HS256"
+	iss    = "Roccaforte"
 	secret = "potato"
 )
 
-func IssueJWT() (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": "btk44",
-		"nbf":      time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-	})
+func IssueJWT(sub string) (string, error) {
 
-	return token.SignedString([]byte(secret))
+	n := time.Now().UTC()
+
+	c := jwt.StandardClaims{
+		Id:        uuid.NewV4().String(),
+		IssuedAt:  n.Unix(),
+		ExpiresAt: now.New(n).EndOfWeek().Unix(),
+		NotBefore: n.Unix(),
+		Issuer:    iss,
+		Subject:   sub,
+	}
+
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+
+	return t.SignedString([]byte(secret))
 }

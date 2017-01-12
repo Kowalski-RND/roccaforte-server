@@ -15,7 +15,7 @@ func secretRouter() http.Handler {
 }
 
 func allSecrets(w http.ResponseWriter, r *http.Request) {
-	t, err := sec.IssueJWT()
+	t, err := sec.IssueJWT("btk44-test")
 
 	if err != nil {
 		InternalServerError(w, r, "")

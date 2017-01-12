@@ -23,6 +23,8 @@ func userRouter() http.Handler {
 }
 
 func allUsers(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	users, err := model.AllUsers()
 
 	if err != nil {
@@ -34,6 +36,8 @@ func allUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	d := json.NewDecoder(r.Body)
 
 	var u model.User
@@ -43,8 +47,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, r, "")
 		return
 	}
-
-	defer r.Body.Close()
 
 	err = u.Create()
 
@@ -67,12 +69,15 @@ func userCtx(next http.Handler) http.Handler {
 			NotFound(w, r, "No user found for given username.")
 			return
 		}
+
 		ctx := context.WithValue(r.Context(), "user", u)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	u := r.Context().Value("user").(*model.User)
 	render.JSON(w, r, u)
 }

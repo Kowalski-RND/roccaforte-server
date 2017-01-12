@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"github.com/pkg/errors"
 	"github.com/roccaforte/server/sec"
 	"github.com/satori/go.uuid"
@@ -12,7 +13,7 @@ type User struct {
 	Id        uuid.UUID `json:"-"`
 	Fullname  string    `json:"fullname" validate:"required,gt=8"`
 	Username  string    `json:"username"validate:"required,gt=3"`
-	Password  string    `json:"-" validate:"required,gt=3"`
+	Password  string    `json:"password,omitempty" validate:"required,gt=3"`
 	PublicKey string    `json:"public_key" validate:"required,gt=3"`
 }
 
@@ -71,8 +72,8 @@ func (u User) Create() error {
 func UserByUsername(un string) (*User, bool, error) {
 	var u User
 
-	err := db.QueryRow(`SELECT id, username, fullname, "publicKey" FROM users WHERE username = $1`, un).
-		Scan(&u.Id, &u.Username, &u.Fullname, &u.PublicKey)
+	err := db.QueryRow(`SELECT id, username, password, fullname, "publicKey" FROM users WHERE username = $1`, un).
+		Scan(&u.Id, &u.Username, &u.Password, &u.Fullname, &u.PublicKey)
 
 	if err != nil && err == sql.ErrNoRows {
 		return nil, true, nil
@@ -81,4 +82,15 @@ func UserByUsername(un string) (*User, bool, error) {
 	}
 
 	return &u, false, nil
+}
+
+// Sets password to empty string to omit on serialization.
+func (u User) MarshalJSON() ([]byte, error) {
+	type Alias User
+	u.Password = ""
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(u),
+	})
 }

@@ -13,3 +13,7 @@ func HashPwd(p string) (string, error) {
 
 	return string(h), nil
 }
+
+func CheckPw(h, p string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(h), []byte(p)) == nil
+}

@@ -9,6 +9,7 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+// User represents an individual that has access to Roccaforte
 type User struct {
 	ID        uuid.UUID `json:"-"`
 	Fullname  string    `json:"fullname" validate:"required,gt=8"`
@@ -19,11 +20,13 @@ type User struct {
 
 type users []User
 
+// Credentials is a convenience struct for login use.
 type Credentials struct {
 	Username string `json:"username`
 	Password string `json:"password"`
 }
 
+// AllUsers retreives all users from the database.
 func AllUsers() (*users, error) {
 	var (
 		users users
@@ -55,6 +58,8 @@ func AllUsers() (*users, error) {
 	return &users, err
 }
 
+// Create assigns a UUID and stores the User struct
+// representation into the database.
 func (u User) Create() error {
 	u.ID = uuid.NewV4()
 
@@ -74,6 +79,9 @@ func (u User) Create() error {
 	return err
 }
 
+// UserByUsername retreives a user based on provided username.
+// If no user exists for given username, middle return will be true.
+// If an error occurs during the query, middle return will be false and error will be populated.
 func UserByUsername(un string) (*User, bool, error) {
 	var u User
 
@@ -89,7 +97,8 @@ func UserByUsername(un string) (*User, bool, error) {
 	return &u, false, nil
 }
 
-// Sets password to empty string to omit on serialization.
+// MarshalJSON overrides default functionality and sets
+// password to empty string to omit on serialization.
 func (u User) MarshalJSON() ([]byte, error) {
 	type alias User
 	u.Password = ""

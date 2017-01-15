@@ -4,6 +4,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Secret represents an symmetrically encrypted piece of data.
+// It does not encompass an individual key.
 type Secret struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
@@ -12,8 +14,10 @@ type Secret struct {
 	IV         string    `json:"iv"`
 }
 
-type Secrets []Secret
+type secrets []Secret
 
+// Create assigns a UUID and stores the Secret struct
+// representation into the database.
 func (s Secret) Create() (Secret, error) {
 	s.ID = uuid.NewV4()
 

@@ -13,7 +13,7 @@ import (
 type User struct {
 	ID        uuid.UUID `json:"-"`
 	Fullname  string    `json:"fullname" validate:"required,gt=8"`
-	Username  string    `json:"username"validate:"required,gt=3"`
+	Username  string    `json:"username" validate:"required,gt=3"`
 	Password  string    `json:"password,omitempty" validate:"required,gt=3"`
 	PublicKey string    `json:"public_key" validate:"required,gt=3"`
 }
@@ -22,7 +22,7 @@ type users []User
 
 // Credentials is a convenience struct for login use.
 type Credentials struct {
-	Username string `json:"username`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 

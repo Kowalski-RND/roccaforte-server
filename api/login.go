@@ -50,11 +50,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if t, err := sec.IssueJWT(u.Username); err != nil {
+	if t, err := sec.IssueJWT(u.ID); err != nil {
 		InternalServerError(w, r, "")
 		return
 	} else {
 		render.JSON(w, r, t)
 	}
-
 }

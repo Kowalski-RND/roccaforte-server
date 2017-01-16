@@ -9,9 +9,10 @@ import (
 // associated secret.
 type Key struct {
 	ID     uuid.UUID `json:"id"`
-	Secret Secret    `json:"secret"`
-	Owner  User      `json:"owner"`
-	Key    string    `json:"key"`
+	Secret Secret    `json:"secret" validate:"required"`
+	Owner  User      `json:"owner" validate:"required"`
+	Key    string    `json:"key" validate:"required"`
 }
 
-type keys []Key
+// Keys is a convenience type representing a slice of Key.
+type Keys []Key

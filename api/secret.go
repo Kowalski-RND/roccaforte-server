@@ -27,7 +27,17 @@ func secretRouter() http.Handler {
 }
 
 func allSecrets(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, "Not implemented")
+	c := r.Context().Value(ctxJWT).(jwt.MapClaims)
+
+	author, _ := uuid.FromString(c["sub"].(string))
+	secrets, err := model.AllSecrets(author)
+
+	if err != nil {
+		InternalServerError(w, r, err.Error())
+		return
+	}
+
+	render.JSON(w, r, secrets)
 }
 
 func createSecret(w http.ResponseWriter, r *http.Request) {
@@ -45,15 +55,9 @@ func createSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, err := uuid.FromString(c["sub"].(string))
+	author, _ := uuid.FromString(c["sub"].(string))
 
-	if err != nil {
-		InternalServerError(w, r, "")
-	}
-
-	s.Author = author
-
-	s, err = s.Create()
+	s, err = s.Create(author)
 
 	if err != nil {
 		BadRequest(w, r, "")

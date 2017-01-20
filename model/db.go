@@ -1,17 +1,19 @@
 package model
 
 import (
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // PostgreSQL Driver silly linter
 	"log"
 )
 
-var db *sql.DB
+var (
+	db *sqlx.DB
+)
 
 // InitDB initializes the database pool and stores it in the model package scope.
-func InitDB(dataSourceName string) {
+func InitDB(ds string) {
 	var err error
-	db, err = sql.Open("postgres", dataSourceName)
+	db, err = sqlx.Connect("postgres", ds)
 
 	if err != nil {
 		log.Panic(err)

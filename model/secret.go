@@ -12,7 +12,7 @@ type Secret struct {
 	Name       string    `json:"name" validate:"required"`
 	Author     User      `json:"author" validate:"required"`
 	Keys       Keys      `json:"keys,omitempty" validate:"required"`
-	CipherText string    `json:"cipher_text" validate:"required"`
+	CipherText string    `json:"cipher_text" validate:"required" db:"cipher_text"`
 	IV         string    `json:"iv" validate:"required"`
 }
 
@@ -22,20 +22,19 @@ type Secrets []Secret
 // AllSecrets returns all secrets authored by given user id (taken from JWT)
 func AllSecrets(tokenUser uuid.UUID) (Secrets, error) {
 	var (
-		temp    map[string]Secret
+		temp    *Secret = &Secret{}
 		secrets Secrets
-		s       Secret
-		u       User
-		k       Key
+		author  = User{
+			ID: tokenUser,
+		}
 	)
 
-	rows, err := db.Query(`SELECT s.id, s.name, a.id, a.username, a.fullname, s.cipher_text, s.iv, k.id, k.key, u.id, u.username, u.fullname 
+	rows, err := db.NamedQuery(`SELECT 
+			s.id,s.name, s.cipher_text, s.iv,
+			a.fullname AS "author.fullname", a.username AS "author.username"
 		FROM secret s 
 			INNER JOIN users a ON a.id = s.author
-			LEFT JOIN  key   k ON s.id = k.secret 
-			LEFT JOIN  users u ON k.owner = u.id 
-		WHERE s.author = $1`,
-		tokenUser.String())
+		WHERE s.author = :id`, author)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to query database for secrets.")
@@ -43,27 +42,22 @@ func AllSecrets(tokenUser uuid.UUID) (Secrets, error) {
 
 	defer rows.Close()
 
-	temp = make(map[string]Secret)
-
 	for rows.Next() {
-		err := rows.Scan(&s.ID, &s.Name, &s.Author.ID, &s.Author.Username, &s.Author.Fullname, &s.CipherText, &s.IV, &k.ID, &k.Key, &u.ID, &u.Username, &u.Fullname)
+		err = rows.StructScan(&temp)
+
 		if err != nil {
-			break
+			continue
 		}
 
-		k.Owner = u
-		k.Secret = s
+		secrets = append(secrets, *temp)
 
-		if val, ok := temp[s.ID.String()]; ok {
-			val.Keys = append(val.Keys, k)
-		} else {
-			s.Keys = append(s.Keys, k)
-			temp[s.ID.String()] = s
+		keys, err := AllKeysForSecret(*temp)
+
+		if err != nil {
+			continue
 		}
-	}
 
-	for _, val := range temp {
-		secrets = append(secrets, val)
+		temp.Keys = keys
 	}
 
 	return secrets, nil

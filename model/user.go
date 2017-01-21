@@ -11,11 +11,11 @@ import (
 
 // User represents an individual that has access to Roccaforte
 type User struct {
-	ID        uuid.UUID `json:"-"`
-	Fullname  string    `json:"fullname" validate:"required,gt=8"`
-	Username  string    `json:"username" validate:"required,gt=3"`
-	Password  string    `json:"password,omitempty" validate:"required,gt=3"`
-	PublicKey string    `json:"public_key,omitempty" validate:"required,gt=3"`
+	ID        uuid.UUID `db:"id" json:"-"`
+	Fullname  string    `db:"fullname" json:"fullname" validate:"required,gt=8"`
+	Username  string    `db:"username" json:"username" validate:"required,gt=3"`
+	Password  string    `db:"password" json:"password,omitempty" validate:"required,gt=3"`
+	PublicKey string    `db:"public_key" json:"public_key,omitempty" validate:"required,gt=3"`
 }
 
 // Users is a convenience type representing a slice of User.
@@ -28,35 +28,19 @@ type Credentials struct {
 }
 
 // AllUsers retreives all users from the database.
-func AllUsers() (*Users, error) {
-	var (
-		users Users
-		u     User
-	)
+func AllUsers() (Users, error) {
+	users := Users{}
 
-	rows, err := db.Query(`SELECT id, username, fullname, "publicKey" FROM users`)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to query database for users.")
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		err := rows.Scan(&u.ID, &u.Username, &u.Fullname, &u.PublicKey)
-		if err != nil {
-			break
-		}
-		users = append(users, u)
-	}
-
-	err = rows.Err()
+	err := db.
+		Select("id", "username", "fullname", "public_key").
+		From("users").
+		QueryStructs(&users)
 
 	if err != nil {
-		return nil, err
+		return Users{}, errors.Wrap(err, "Unable to query database for users.")
 	}
 
-	return &users, err
+	return users, nil
 }
 
 // Create assigns a UUID and stores the User struct
@@ -74,28 +58,31 @@ func (u User) Create() error {
 		return errors.Wrap(err.(validator.ValidationErrors), "Provided user data failed validation.")
 	}
 
-	_, err = db.Query(`INSERT INTO users (id, username, fullname, "publicKey", password) VALUES ($1, $2, $3, $4, $5)`,
-		&u.ID, &u.Username, &u.Fullname, &u.PublicKey, &u.Password)
+	err = db.
+		InsertInto("users").
+		Columns("id", "username", "fullname", "public_key", "password").
+		Values(u.ID, u.Username, u.Fullname, u.PublicKey, u.Password).
+		Returning("id").
+		QueryStruct(&u)
 
 	return err
 }
 
 // UserByUsername retreives a user based on provided username.
-// If no user exists for given username, middle return will be true.
-// If an error occurs during the query, middle return will be false and error will be populated.
-func UserByUsername(un string) (*User, bool, error) {
-	var u User
+func UserByUsername(un string) (User, error) {
+	u := User{}
 
-	err := db.QueryRow(`SELECT id, username, password, fullname, "publicKey" FROM users WHERE username = $1`, un).
-		Scan(&u.ID, &u.Username, &u.Password, &u.Fullname, &u.PublicKey)
+	err := db.
+		Select("id", "username", "password", "fullname", "public_key").
+		From("users").
+		Where("username = $1", un).
+		QueryStruct(&u)
 
-	if err != nil && err == sql.ErrNoRows {
-		return nil, true, nil
-	} else if err != nil {
-		return nil, false, errors.Wrap(err, "Internal Server Error while quering for user by username.")
+	if err != nil && err != sql.ErrNoRows {
+		return User{}, errors.Wrap(err, "Internal Server Error while quering for user by username.")
 	}
 
-	return &u, false, nil
+	return u, nil
 }
 
 // MarshalJSON overrides default functionality and sets

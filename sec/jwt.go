@@ -5,7 +5,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/now"
 	"github.com/satori/go.uuid"
-	"log"
 	"time"
 )
 
@@ -20,9 +19,6 @@ const (
 // IssueJWT creates a new token to be returned as part of
 // a successful login response
 func IssueJWT(sub uuid.UUID) (string, error) {
-
-	log.Println("Issuing JWT")
-
 	n := time.Now().UTC()
 
 	c := jwt.StandardClaims{

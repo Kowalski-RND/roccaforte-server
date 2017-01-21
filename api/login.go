@@ -33,12 +33,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, empty, err := model.UserByUsername(c.Username)
+	u, err := model.UserByUsername(c.Username)
 
 	if err != nil {
 		InternalServerError(w, r, "")
 		return
-	} else if empty {
+	} else if (model.User{}) == u {
 		Unauthorized(w, r, invalidUserOrPass)
 		return
 	}

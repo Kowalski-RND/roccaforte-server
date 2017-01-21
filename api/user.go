@@ -66,11 +66,11 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func userCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "username")
-		u, empty, err := model.UserByUsername(username)
+		u, err := model.UserByUsername(username)
 		if err != nil {
 			InternalServerError(w, r, "")
 			return
-		} else if empty {
+		} else if (model.User{}) == u {
 			NotFound(w, r, "No user found for given username.")
 			return
 		}

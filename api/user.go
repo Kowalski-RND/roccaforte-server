@@ -1,10 +1,9 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
+	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
 	"net/http"
 )
@@ -15,32 +14,30 @@ const (
 
 func userRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Get("/", allUsers)
-	r.Post("/", createUser)
+	r.Get("/", handler(allUsers).Serve)
+	r.Post("/", handler(createUser).Serve)
 
 	r.Route("/:username", func(r chi.Router) {
 		r.Use(bearerTokenCtx)
-		r.Use(userCtx)
-		r.Get("/", getUser)
+		r.Get("/", handler(getUser).Serve)
 	})
 
 	return r
 }
 
-func allUsers(w http.ResponseWriter, r *http.Request) {
+func allUsers(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
 	users, err := model.AllUsers()
 
 	if err != nil {
-		InternalServerError(w, r, "")
-		return
+		return nil, errors.InternalServerError("")
 	}
 
-	render.JSON(w, r, users)
+	return users, nil
 }
 
-func createUser(w http.ResponseWriter, r *http.Request) {
+func createUser(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
 	d := json.NewDecoder(r.Body)
@@ -49,40 +46,29 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&u)
 
 	if err != nil {
-		BadRequest(w, r, "")
-		return
+		return nil, errors.BadRequest("")
 	}
 
 	err = u.Create()
 
 	if err != nil {
-		BadRequest(w, r, "")
-		return
+		return nil, errors.BadRequest("")
 	}
 
-	render.JSON(w, r, u)
+	return u, nil
 }
 
-func userCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		username := chi.URLParam(r, "username")
-		u, err := model.UserByUsername(username)
-		if err != nil {
-			InternalServerError(w, r, "")
-			return
-		} else if (model.User{}) == u {
-			NotFound(w, r, "No user found for given username.")
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), keyUser, u)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func getUser(w http.ResponseWriter, r *http.Request) {
+func getUser(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
-	u := r.Context().Value(keyUser).(model.User)
-	render.JSON(w, r, u)
+	username := chi.URLParam(r, "username")
+	u, err := model.UserByUsername(username)
+
+	if err != nil {
+		return nil, errors.InternalServerError("")
+	} else if (model.User{}) == u {
+		return nil, errors.NotFound("No user found for given username.")
+	}
+
+	return u, nil
 }

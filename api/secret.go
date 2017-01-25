@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
+	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
 	"github.com/satori/go.uuid"
 	"net/http"
@@ -19,28 +19,29 @@ func secretRouter() http.Handler {
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(bearerTokenCtx)
-		r.Get("/", allSecrets)
-		r.Post("/", createSecret)
+		r.Get("/", handler(allSecrets).Serve)
+		r.Post("/", handler(createSecret).Serve)
 	})
 
 	return r
 }
 
-func allSecrets(w http.ResponseWriter, r *http.Request) {
+func allSecrets(w http.ResponseWriter, r *http.Request) (content, error) {
+	defer r.Body.Close()
+
 	c := r.Context().Value(ctxJWT).(jwt.MapClaims)
 
 	author, _ := uuid.FromString(c["sub"].(string))
 	secrets, err := model.AllSecrets(author)
 
 	if err != nil {
-		InternalServerError(w, r, err.Error())
-		return
+		return nil, errors.InternalServerError(err.Error())
 	}
 
-	render.JSON(w, r, secrets)
+	return secrets, nil
 }
 
-func createSecret(w http.ResponseWriter, r *http.Request) {
+func createSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
 	d := json.NewDecoder(r.Body)
@@ -51,8 +52,7 @@ func createSecret(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&s)
 
 	if err != nil {
-		BadRequest(w, r, "")
-		return
+		return nil, errors.BadRequest("")
 	}
 
 	author, _ := uuid.FromString(c["sub"].(string))
@@ -60,9 +60,8 @@ func createSecret(w http.ResponseWriter, r *http.Request) {
 	s, err = s.Create(author)
 
 	if err != nil {
-		BadRequest(w, r, "")
-		return
+		return nil, errors.BadRequest("")
 	}
 
-	render.JSON(w, r, s)
+	return s, nil
 }

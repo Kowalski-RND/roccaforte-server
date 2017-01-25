@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
+	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
 	"github.com/roccaforte/server/sec"
 	"net/http"
@@ -15,12 +15,12 @@ const (
 
 func loginRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Post("/", login)
+	r.Post("/", handler(login).Serve)
 
 	return r
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
+func login(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
 	d := json.NewDecoder(r.Body)
@@ -29,33 +29,28 @@ func login(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&c)
 
 	if err != nil {
-		BadRequest(w, r, "")
-		return
+		return nil, errors.BadRequest("")
 	}
 
 	u, err := model.UserByUsername(c.Username)
 
 	if err != nil {
-		InternalServerError(w, r, "")
-		return
+		return nil, errors.InternalServerError("")
 	} else if (model.User{}) == u {
-		Unauthorized(w, r, invalidUserOrPass)
-		return
+		return nil, errors.Unauthorized(invalidUserOrPass)
 	}
 
 	a := sec.CheckPw(u.Password, c.Password)
 
 	if !a {
-		Unauthorized(w, r, invalidUserOrPass)
-		return
+		return nil, errors.Unauthorized(invalidUserOrPass)
 	}
 
 	t, err := sec.IssueJWT(u.ID)
 
 	if err != nil {
-		InternalServerError(w, r, "")
-		return
+		return nil, errors.InternalServerError("")
 	}
 
-	render.JSON(w, r, t)
+	return model.Token{t}, nil
 }

@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	"gopkg.in/mgutz/dat.v1/sqlx-runner"
 )
 
 // Key represents an asymmetrically encrypted
@@ -18,12 +19,15 @@ type Key struct {
 // Keys is a convenience type representing a slice of Key.
 type Keys []Key
 
-func (k Key) CreateKey(s Secret) (Key, error) {
+// Create assigns a UUID and stores the Key struct
+// representation into the database.
+func (k Key) Create(tx *runner.Tx, s Secret) (Key, error) {
 	k.ID = uuid.NewV4()
 	k.Secret = s
 
-	_, err := db.DB.Query(`INSERT INTO keys (id, secret, owner, key) VALUES ($1, $2, $3, $4)`,
-		&k.ID, &k.Secret.ID, &k.Owner.ID, &k.Key)
+	_, err := tx.SQL(`INSERT INTO keys (id, secret, owner, key) VALUES ($1, $2, $3, $4)`,
+		&k.ID, &k.Secret.ID, &k.Owner.ID, &k.Key).
+		Exec()
 
 	return k, err
 }

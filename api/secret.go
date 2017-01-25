@@ -48,7 +48,7 @@ func createSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 
 	c := r.Context().Value(ctxJWT).(jwt.MapClaims)
 
-	var s model.Secret
+	s := model.Secret{}
 	err := d.Decode(&s)
 
 	if err != nil {
@@ -57,11 +57,32 @@ func createSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 
 	author, _ := uuid.FromString(c["sub"].(string))
 
-	s, err = s.Create(author)
+	tx, _ := model.CreateTransaction()
+
+	defer tx.AutoRollback()
+
+	s, err = s.Create(tx, author)
 
 	if err != nil {
 		return nil, errors.BadRequest("")
 	}
+
+	for i := range s.Keys {
+
+		s.Keys[i].Secret = s
+		k, err := s.Keys[i].Create(tx, s)
+
+		if err != nil {
+			return nil, errors.BadRequest("")
+		}
+
+		// Prevent circular, stack destorying struct.
+		s.Keys[i].Secret = model.Secret{}
+		s.Keys[i].ID = k.ID
+
+	}
+
+	tx.Commit()
 
 	return s, nil
 }

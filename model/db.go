@@ -35,3 +35,8 @@ func InitDB(ds string) {
 
 	db = runner.NewDB(conn, "postgres")
 }
+
+// CreateTransaction creates a new transaction without exposing the db pool.
+func CreateTransaction() (*runner.Tx, error) {
+	return db.Begin()
+}

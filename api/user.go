@@ -46,13 +46,13 @@ func createUser(w http.ResponseWriter, r *http.Request) (content, error) {
 	err := d.Decode(&u)
 
 	if err != nil {
-		return nil, errors.BadRequest("")
+		return nil, errors.BadRequest(err.Error())
 	}
 
 	err = u.Create()
 
 	if err != nil {
-		return nil, errors.BadRequest("")
+		return nil, errors.BadRequest(err.Error())
 	}
 
 	return u, nil

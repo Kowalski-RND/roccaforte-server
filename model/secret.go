@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	"gopkg.in/mgutz/dat.v1/sqlx-runner"
 )
 
 // Secret represents an symmetrically encrypted piece of data.
@@ -45,13 +46,15 @@ func AllSecrets(author uuid.UUID) (Secrets, error) {
 
 // Create assigns a UUID and stores the Secret struct
 // representation into the database.
-func (s Secret) Create(author uuid.UUID) (Secret, error) {
+func (s Secret) Create(tx *runner.Tx, author uuid.UUID) (Secret, error) {
 	s.ID = uuid.NewV4()
+	s.Author = User{ID: author}
 
 	// Add struct validation here later
 
-	_, err := db.DB.Query(`INSERT INTO secrets (id, name, author, cipher_text, iv) VALUES ($1, $2, $3, $4, $5)`,
-		&s.ID, &s.Name, &author, &s.CipherText, &s.IV)
+	_, err := tx.SQL(`INSERT INTO secrets (id, name, author, cipher_text, iv) VALUES ($1, $2, $3, $4, $5)`,
+		&s.ID, &s.Name, &author, &s.CipherText, &s.IV).
+		Exec()
 
 	return s, err
 }

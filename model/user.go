@@ -11,7 +11,7 @@ import (
 
 // User represents an individual that has access to Roccaforte
 type User struct {
-	ID        uuid.UUID `db:"id" json:"-"`
+	ID        uuid.UUID `db:"id" json:"id,omitempty"`
 	Fullname  string    `db:"fullname" json:"fullname" validate:"required,gt=8"`
 	Username  string    `db:"username" json:"username" validate:"required,gt=3"`
 	Password  string    `db:"password" json:"password,omitempty" validate:"required,gt=3"`

@@ -3,9 +3,23 @@ language: go
 go:
   - 1.7.x
 
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.6"
+
 before_install:
   - go get github.com/roccaforte/server
   - go get github.com/tools/godep
 
 install:
   - godep restore
+
+before_script:
+  - psql -c 'create database roccaforte;' -U postgres
+  - psql -U postgres -d postgres -a -f ./schema.sql
+
+script:
+  - go run ./roccaforte.go&
+  - go test ./...

@@ -3,9 +3,13 @@ language: go
 go:
   - 1.7.x
 
+dist: trusty
+
+sudo: false
+
 addons:
     postgresql: "9.6"
-    
+
 services:
     - postgresql
 

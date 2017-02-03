@@ -4,9 +4,8 @@ go:
   - 1.7.x
 
 before_install:
-  - go get github.com/my_project_path
+  - go get github.com/roccaforte/server
   - go get github.com/tools/godep
 
 install:
   - godep restore
-  

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"github.com/pressly/chi"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
@@ -40,16 +39,14 @@ func allUsers(w http.ResponseWriter, r *http.Request) (content, error) {
 func createUser(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
-	d := json.NewDecoder(r.Body)
-
-	var u model.User
-	err := d.Decode(&u)
+	u := model.User{}
+	err := decode(r, &u)
 
 	if err != nil {
 		return nil, errors.BadRequest(err.Error())
 	}
 
-	err = u.Create()
+	u, err = u.Create()
 
 	if err != nil {
 		return nil, errors.BadRequest(err.Error())

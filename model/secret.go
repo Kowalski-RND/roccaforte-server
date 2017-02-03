@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"gopkg.in/mgutz/dat.v1/sqlx-runner"
@@ -10,22 +11,37 @@ import (
 // It does not encompass an individual key.
 type Secret struct {
 	ID         uuid.UUID `db:"id" json:"id"`
-	Name       string    `db:"name" json:"name" validate:"required"`
-	Author     User      `db:"author" json:"author" validate:"required"`
-	Keys       Keys      `json:"keys,omitempty" validate:"required"`
-	CipherText string    `db:"cipher_text" json:"cipher_text" validate:"required"`
-	IV         string    `db:"iv" json:"iv" validate:"required"`
+	Author     User      `db:"author" json:"author"`
+	Keys       Keys      `json:"keys"`
+	CipherText string    `db:"cipher_text" json:"cipher_text"`
+	IV         string    `db:"iv" json:"iv"`
 }
 
 // Secrets is a convenience type representing a slice of Secret.
 type Secrets []Secret
+
+// Validate ensures that nested usage of Secret contains an ID
+func (s Secret) Validate() error {
+	return validation.StructRules{}.
+		Add("ID", validation.Required).
+		Validate(s)
+}
+
+func (s Secret) validateNew() error {
+	return validation.StructRules{}.
+		Add("Author", validation.Required).
+		Add("Keys", validation.Required).
+		Add("CipherText", validation.Required).
+		Add("IV", validation.Required).
+		Validate(s)
+}
 
 // AllSecrets returns all secrets authored by given user id (taken from JWT)
 func AllSecrets(author uuid.UUID) (Secrets, error) {
 	secrets := Secrets{}
 
 	err := db.SQL(`SELECT 
-				s.id,s.name, s.cipher_text, s.iv,
+				s.id, s.cipher_text, s.iv,
 				a.fullname AS "author.fullname", a.username AS "author.username"
 			FROM secrets s 
 				INNER JOIN users a ON a.id = s.author
@@ -33,7 +49,7 @@ func AllSecrets(author uuid.UUID) (Secrets, error) {
 		QueryStructs(&secrets)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to query database for secrets.")
+		return Secrets{}, errors.Wrap(err, "Unable to query database for secrets.")
 	}
 
 	for i := range secrets {
@@ -46,14 +62,17 @@ func AllSecrets(author uuid.UUID) (Secrets, error) {
 
 // Create assigns a UUID and stores the Secret struct
 // representation into the database.
-func (s Secret) Create(tx *runner.Tx, author uuid.UUID) (Secret, error) {
+func (s Secret) Create(tx *runner.Tx) (Secret, error) {
 	s.ID = uuid.NewV4()
-	s.Author = User{ID: author}
 
-	// Add struct validation here later
+	err := s.validateNew()
 
-	_, err := tx.SQL(`INSERT INTO secrets (id, name, author, cipher_text, iv) VALUES ($1, $2, $3, $4, $5)`,
-		&s.ID, &s.Name, &author, &s.CipherText, &s.IV).
+	if err != nil {
+		return s, err
+	}
+
+	_, err = tx.SQL(`INSERT INTO secrets (id, author, cipher_text, iv) VALUES ($1, $2, $3, $4)`,
+		&s.ID, &s.Author.ID, &s.CipherText, &s.IV).
 		Exec()
 
 	return s, err

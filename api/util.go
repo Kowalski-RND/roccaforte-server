@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/pressly/chi/render"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/sec"
@@ -53,4 +54,9 @@ func bearerTokenCtx(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), ctxJWT, c)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func decode(r *http.Request, m interface{}) error {
+	d := json.NewDecoder(r.Body)
+	return d.Decode(m)
 }

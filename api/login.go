@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"github.com/pressly/chi"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
@@ -23,10 +22,8 @@ func loginRouter() http.Handler {
 func login(w http.ResponseWriter, r *http.Request) (content, error) {
 	defer r.Body.Close()
 
-	d := json.NewDecoder(r.Body)
-
-	var c model.Credentials
-	err := d.Decode(&c)
+	c := model.Credentials{}
+	err := decode(r, &c)
 
 	if err != nil {
 		return nil, errors.BadRequest("")

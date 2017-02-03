@@ -3,19 +3,19 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/roccaforte/server/sec"
 	"github.com/satori/go.uuid"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 // User represents an individual that has access to Roccaforte
 type User struct {
 	ID        uuid.UUID `db:"id" json:"id,omitempty"`
-	Fullname  string    `db:"fullname" json:"fullname" validate:"required,gt=8"`
-	Username  string    `db:"username" json:"username" validate:"required,gt=3"`
-	Password  string    `db:"password" json:"password,omitempty" validate:"required,gt=3"`
-	PublicKey string    `db:"public_key" json:"public_key,omitempty" validate:"required,gt=3"`
+	Fullname  string    `db:"fullname" json:"fullname"`
+	Username  string    `db:"username" json:"username"`
+	Password  string    `db:"password" json:"password,omitempty"`
+	PublicKey string    `db:"public_key" json:"public_key,omitempty"`
 }
 
 // Users is a convenience type representing a slice of User.
@@ -25,6 +25,22 @@ type Users []User
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// Validate ensures that nested usage of User contains an ID
+func (u User) Validate() error {
+	return validation.StructRules{}.
+		Add("ID", validation.Required).
+		Validate(u)
+}
+
+func (u User) validateNew() error {
+	return validation.StructRules{}.
+		Add("Fullname", validation.Required).
+		Add("Username", validation.Required, validation.Length(3, 30)).
+		Add("Password", validation.Required, validation.Length(8, 256)).
+		// Add custom validator for Public Key verification
+		Validate(u)
 }
 
 // AllUsers retreives all users from the database.
@@ -45,17 +61,19 @@ func AllUsers() (Users, error) {
 
 // Create assigns a UUID and stores the User struct
 // representation into the database.
-func (u User) Create() error {
+func (u User) Create() (User, error) {
 	u.ID = uuid.NewV4()
 
-	hash, _ := sec.HashPwd(u.Password)
-
-	u.Password = hash
-
-	err := validate.Struct(u)
+	err := u.validateNew()
 
 	if err != nil {
-		return errors.Wrap(err.(validator.ValidationErrors), "Provided user data failed validation.")
+		return u, err
+	}
+
+	u.Password, err = sec.HashPwd(u.Password)
+
+	if err != nil {
+		return u, err
 	}
 
 	err = db.
@@ -65,7 +83,7 @@ func (u User) Create() error {
 		Returning("id").
 		QueryStruct(&u)
 
-	return err
+	return u, err
 }
 
 // UserByUsername retreives a user based on provided username.

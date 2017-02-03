@@ -80,7 +80,7 @@ func createSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 			return nil, errors.BadRequest(err.Error())
 		}
 
-		// Prevent circular, stack destorying struct.
+		// Prevent circular, stack destroying struct.
 		s.Keys[i].Secret.Keys = model.Keys{}
 		s.Keys[i].ID = k.ID
 	}

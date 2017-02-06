@@ -2,10 +2,11 @@ package sec
 
 import (
 	"errors"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/now"
 	"github.com/satori/go.uuid"
-	"time"
 )
 
 const (

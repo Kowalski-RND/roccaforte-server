@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
 	"net/http"
 	"time"
+
+	"github.com/pressly/chi"
+	"github.com/pressly/chi/middleware"
 )
 
 // New returns the main Roccaforte Server router.

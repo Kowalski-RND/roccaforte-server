@@ -4,7 +4,6 @@ import (
 	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
-	"gopkg.in/mgutz/dat.v1/sqlx-runner"
 )
 
 // Secret represents an symmetrically encrypted piece of data.
@@ -60,9 +59,27 @@ func AllSecrets(author uuid.UUID) (Secrets, error) {
 	return secrets, nil
 }
 
+// GetSecret retreives a Secret for the given ID.
+func GetSecret(id uuid.UUID) (Secret, error) {
+	s := Secret{}
+
+	err := db.SQL(`SELECT 
+				s.id, s.cipher_text, s.iv,
+				a.id AS "author.id", a.fullname AS "author.fullname", a.username AS "author.username"
+			FROM secrets s 
+				INNER JOIN users a ON a.id = s.author
+			WHERE s.id = $1`, id).
+		QueryStruct(&s)
+
+	return s, err
+}
+
 // Create assigns a UUID and stores the Secret struct
 // representation into the database.
-func (s Secret) Create(tx *runner.Tx) (Secret, error) {
+func (s Secret) Create() (Secret, error) {
+	tx, _ := CreateTransaction()
+	defer tx.AutoRollback()
+
 	s.ID = uuid.NewV4()
 
 	err := s.validateNew()
@@ -74,6 +91,21 @@ func (s Secret) Create(tx *runner.Tx) (Secret, error) {
 	_, err = tx.SQL(`INSERT INTO secrets (id, author, cipher_text, iv) VALUES ($1, $2, $3, $4)`,
 		&s.ID, &s.Author.ID, &s.CipherText, &s.IV).
 		Exec()
+
+	for i := range s.Keys {
+		s.Keys[i].Secret = s
+		k, err := s.Keys[i].Create(tx, s)
+
+		if err != nil {
+			return s, errors.Wrap(err, "Unable to save key.")
+		}
+
+		// Prevent circular, stack destroying struct.
+		s.Keys[i].Secret.Keys = Keys{}
+		s.Keys[i].ID = k.ID
+	}
+
+	tx.Commit()
 
 	return s, err
 }

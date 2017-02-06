@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
+
 	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/roccaforte/server/sec"

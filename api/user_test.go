@@ -3,10 +3,11 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/roccaforte/server/model"
-	"github.com/satori/go.uuid"
 	"net/http"
 	"testing"
+
+	"github.com/roccaforte/server/model"
+	"github.com/satori/go.uuid"
 )
 
 var (
@@ -56,5 +57,4 @@ func TestUserCreation(t *testing.T) {
 	if c.ID == defaultUUID {
 		t.Error("User not saved as default UUID present on returned data")
 	}
-
 }

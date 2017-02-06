@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/pressly/chi/render"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/sec"
-	"net/http"
+	uuid "github.com/satori/go.uuid"
 )
 
 type contextKey int
@@ -35,8 +38,6 @@ func response(w http.ResponseWriter, r *http.Request, c content, status int) {
 
 func bearerTokenCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
 		t := r.Header.Get("Authorization")
 
 		if t == "" {
@@ -54,6 +55,12 @@ func bearerTokenCtx(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), ctxJWT, c)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func bearerTokenSubject(r *http.Request) uuid.UUID {
+	c := r.Context().Value(ctxJWT).(jwt.MapClaims)
+	sub, _ := uuid.FromString(c["sub"].(string))
+	return sub
 }
 
 func decode(r *http.Request, m interface{}) error {

@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/pressly/chi"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
-	"net/http"
 )
 
 const (
@@ -25,8 +26,6 @@ func userRouter() http.Handler {
 }
 
 func allUsers(w http.ResponseWriter, r *http.Request) (content, error) {
-	defer r.Body.Close()
-
 	users, err := model.AllUsers()
 
 	if err != nil {
@@ -37,8 +36,6 @@ func allUsers(w http.ResponseWriter, r *http.Request) (content, error) {
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) (content, error) {
-	defer r.Body.Close()
-
 	u := model.User{}
 	err := decode(r, &u)
 
@@ -56,8 +53,6 @@ func createUser(w http.ResponseWriter, r *http.Request) (content, error) {
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) (content, error) {
-	defer r.Body.Close()
-
 	username := chi.URLParam(r, "username")
 	u, err := model.UserByUsername(username)
 

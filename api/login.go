@@ -1,11 +1,12 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/pressly/chi"
 	"github.com/roccaforte/server/errors"
 	"github.com/roccaforte/server/model"
 	"github.com/roccaforte/server/sec"
-	"net/http"
 )
 
 const (
@@ -20,8 +21,6 @@ func loginRouter() http.Handler {
 }
 
 func login(w http.ResponseWriter, r *http.Request) (content, error) {
-	defer r.Body.Close()
-
 	c := model.Credentials{}
 	err := decode(r, &c)
 

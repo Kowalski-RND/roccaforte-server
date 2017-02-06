@@ -2,11 +2,12 @@ package model
 
 import (
 	"database/sql"
+	"log"
+	"time"
+
 	_ "github.com/lib/pq" // PostgreSQL Driver silly linter
 	"gopkg.in/mgutz/dat.v1"
 	"gopkg.in/mgutz/dat.v1/sqlx-runner"
-	"log"
-	"time"
 )
 
 var (

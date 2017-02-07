@@ -25,5 +25,5 @@ before_script:
   - psql -U postgres -d postgres -a -f ./schema.sql
 
 script:
-  - go run ./roccaforte.go &
+  - nohup go run ./roccaforte.go&
   - go test ./...

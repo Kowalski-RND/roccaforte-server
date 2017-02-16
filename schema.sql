@@ -21,5 +21,5 @@ CREATE TABLE keys (
     secret UUID NOT NULL,
     key TEXT NOT NULL,
     CONSTRAINT key_owner_fkey FOREIGN KEY (owner) REFERENCES users (id),
-    CONSTRAINT key_secret_fkey FOREIGN KEY (secret) REFERENCES secrets (id)
+    CONSTRAINT keys_secret_fkey FOREIGN KEY (secret) REFERENCES secrets (id) ON DELETE CASCADE
 );

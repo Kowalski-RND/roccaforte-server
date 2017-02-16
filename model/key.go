@@ -70,3 +70,13 @@ func AllKeysForSecret(secret Secret) (Keys, error) {
 
 	return keys, nil
 }
+
+// NukeKeysForSecret blows away all keys for a given secret
+// due to the fact that they all need to be updated when a secret is updated.
+func NukeKeysForSecret(secret Secret) error {
+	_, err := db.DeleteFrom("keys").
+		Where("secret = $1", secret.ID).
+		Exec()
+
+	return err
+}

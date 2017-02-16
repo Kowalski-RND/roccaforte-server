@@ -4,6 +4,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	runner "gopkg.in/mgutz/dat.v1/sqlx-runner"
 )
 
 // Secret represents an symmetrically encrypted piece of data.
@@ -92,12 +93,24 @@ func (s Secret) Create() (Secret, error) {
 		&s.ID, &s.Author.ID, &s.CipherText, &s.IV).
 		Exec()
 
+	err = insertKeys(tx, s)
+
+	if err != nil {
+		return s, errors.Wrap(err, "Unable to save keys.")
+	}
+
+	tx.Commit()
+
+	return s, err
+}
+
+func insertKeys(tx *runner.Tx, s Secret) error {
 	for i := range s.Keys {
 		s.Keys[i].Secret = s
 		k, err := s.Keys[i].Create(tx, s)
 
 		if err != nil {
-			return s, errors.Wrap(err, "Unable to save key.")
+			return err
 		}
 
 		// Prevent circular, stack destroying struct.
@@ -105,7 +118,66 @@ func (s Secret) Create() (Secret, error) {
 		s.Keys[i].ID = k.ID
 	}
 
+	return nil
+}
+
+// Update modifies a saved Secret. This will delete all current Keys
+// associated with the Secret and replace all fields with what got provided.
+func (s Secret) Update() (Secret, error) {
+	tx, _ := CreateTransaction()
+	defer tx.AutoRollback()
+
+	err := s.Validate()
+
+	if err != nil {
+		return s, errors.Wrap(err, "Cannot update Secret as no ID passed in.")
+	}
+
+	_, err = tx.
+		Update("secrets").
+		Set("cipher_text", s.CipherText).
+		Set("iv", s.IV).
+		Where("id = $1", s.ID).
+		Exec()
+
+	if err != nil {
+		return s, errors.Wrap(err, "Unable to update secret. No changes have been persisted.")
+	}
+
+	err = NukeKeysForSecret(s)
+
+	if err != nil {
+		return s, errors.Wrap(err, "Unable to delete existing keys.")
+	}
+
+	err = insertKeys(tx, s)
+
+	if err != nil {
+		return s, errors.Wrap(err, "Unable to save keys.")
+	}
+
 	tx.Commit()
 
 	return s, err
+}
+
+// DeleteSecret removes a saved Secret. Please note to any consumer of this function
+// that this removes the Secret and associated Keys from the database. You still
+// have to roll the password in this Secret as individuals may still hold a copy.
+// Common sense, but just a friendly reminder :)
+func (s Secret) Delete() error {
+	tx, _ := CreateTransaction()
+	defer tx.AutoRollback()
+
+	err := s.Validate()
+
+	if err != nil {
+		return errors.Wrap(err, "Cannot delete Secret as no ID passed in.")
+	}
+
+	_, err = db.DeleteFrom("secrets").
+		Where("id = $1", s.ID).
+		Exec()
+
+	return err
 }

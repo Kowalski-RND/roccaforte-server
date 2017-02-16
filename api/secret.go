@@ -21,6 +21,7 @@ func secretRouter() http.Handler {
 		r.Get("/", handler(allSecrets).Serve)
 		r.Post("/", handler(createSecret).Serve)
 		r.Put("/:secretID", handler(updateSecret).Serve)
+		r.Delete("/:secretID", handler(deleteSecret).Serve)
 	})
 
 	return r
@@ -89,7 +90,37 @@ func updateSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 		return nil, errors.Unauthorized("You do not have permission to edit this secret.")
 	}
 
-	// TODO: Put Secret Update Call here
+	s.ID = secretID
+	s.Author.ID = author
+	s.Update()
 
-	return old, err
+	return s, err
+}
+
+func deleteSecret(w http.ResponseWriter, r *http.Request) (content, error) {
+	secretID, err := uuid.FromString(chi.URLParam(r, "secretID"))
+
+	if err != nil {
+		return nil, errors.BadRequest(err.Error())
+	}
+
+	s, err := model.GetSecret(secretID)
+
+	if err != nil {
+		return nil, errors.BadRequest(err.Error())
+	}
+
+	author := bearerTokenSubject(r)
+
+	if author != s.Author.ID {
+		return nil, errors.Unauthorized("You do not have permission to delete this secret.")
+	}
+
+	err = s.Delete()
+
+	if err != nil {
+		return nil, errors.InternalServerError("Unable to delete Secret.")
+	}
+
+	return s, nil
 }

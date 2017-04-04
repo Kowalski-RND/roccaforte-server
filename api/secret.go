@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/pressly/chi"
@@ -80,7 +81,9 @@ func updateSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 
 	old, err := model.GetSecret(secretID)
 
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
+		return nil, errors.BadRequest("Secret specified does not exist.")
+	} else if err != nil {
 		return nil, errors.BadRequest(err.Error())
 	}
 
@@ -106,7 +109,9 @@ func deleteSecret(w http.ResponseWriter, r *http.Request) (content, error) {
 
 	s, err := model.GetSecret(secretID)
 
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
 		return nil, errors.BadRequest(err.Error())
 	}
 

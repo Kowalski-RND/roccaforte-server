@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+
 	"github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -161,7 +163,7 @@ func (s Secret) Update() (Secret, error) {
 	return s, err
 }
 
-// DeleteSecret removes a saved Secret. Please note to any consumer of this function
+// Delete removes a saved Secret. Please note to any consumer of this function
 // that this removes the Secret and associated Keys from the database. You still
 // have to roll the password in this Secret as individuals may still hold a copy.
 // Common sense, but just a friendly reminder :)
@@ -179,5 +181,9 @@ func (s Secret) Delete() error {
 		Where("id = $1", s.ID).
 		Exec()
 
-	return err
+	if err != nil && err != sql.ErrNoRows {
+		return errors.Wrap(err, "Unable to delete Secret")
+	}
+
+	return nil
 }
